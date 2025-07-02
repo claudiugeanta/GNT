@@ -1,8 +1,0 @@
-wwwroot\css\app.css
-wwwroot\css\bootstrap\bootstrap.min.css
-wwwroot\css\bootstrap\bootstrap.min.css.map
-wwwroot\index.html
-D:\GNT\Presentation\GNT.Mobile\wwwroot\css\app.css
-D:\GNT\Presentation\GNT.Mobile\wwwroot\css\bootstrap\bootstrap.min.css
-D:\GNT\Presentation\GNT.Mobile\wwwroot\css\bootstrap\bootstrap.min.css.map
-D:\GNT\Presentation\GNT.Mobile\wwwroot\index.html
