@@ -1,0 +1,149 @@
+﻿@using GNT.Shared.Errors
+@using GNT.Shared.Dtos.Products
+@using GNT.Shared.Enums
+@using GNT.Web.Client.Services
+
+@inject BlazorHttpClient httpClient;
+@inject DialogsService confirmationService;
+@inject TranslateService t;
+
+<MudForm @bind-IsValid="validForm">
+    <MudGrid>
+        <MudItem xs="12">
+            <MudTextField @bind-Value="Code" Label="@t[General.Code]" Required="true" RequiredError="@t[FailureCode.RequiredField]" Variant="Variant.Outlined" Margin="Margin.Dense" />
+        </MudItem>
+        <MudItem xs="12">
+            <MudTextField @bind-Value="Name" Label="@t[General.ProductName]" Required="true" RequiredError="@t[FailureCode.RequiredField]" Variant="Variant.Outlined" Margin="Margin.Dense" />
+        </MudItem>
+        <MudItem xs="6">
+            <MudNumericField @bind-Value="@Price" Label="@t[General.Price]" Required="true" RequiredError="@t[FailureCode.RequiredField]" Variant="Variant.Outlined" Margin="Margin.Dense" />
+        </MudItem>
+        <MudItem xs="6">
+            <MudSelect T="ProductType"
+            Label="@t[General.ProductType]"
+            @bind-Value="Type"
+            RequiredError="@t[FailureCode.RequiredField]"
+            Variant="Variant.Outlined"
+            Margin="Margin.Dense">
+                @foreach (var type in allTypes)
+                {
+                    <MudSelectItem Value="type">@t.Enum(type)</MudSelectItem>
+                }
+            </MudSelect>
+        </MudItem>
+        <MudItem xs="6">
+            <MudDatePicker Label="@t[General.DateIn]" @bind-Date="DatetIn" DateFormat="dd.MM.yyyy" Required=true RequiredError="@t[FailureCode.RequiredField]" Variant="Variant.Outlined" Margin="Margin.Dense" />
+        </MudItem>
+        <MudItem xs="6">
+            <MudDatePicker Label="@t[General.DateOut]" @bind-Date="DateOut" DateFormat="dd.MM.yyyy" Required=true RequiredError="@t[FailureCode.RequiredField]" Variant="Variant.Outlined" Margin="Margin.Dense" />
+        </MudItem>
+        <MudItem xs="6">
+            <MudCheckBox @bind-Value="@IsInStock" Label="@t[General.IsInStock]" />
+        </MudItem>
+        <MudItem xs="12">
+            <MudButton StartIcon="@Icons.Material.Filled.Save" 
+            Class="mt-5" 
+            OnClick="Save"
+            Disabled="!validForm"
+            Color="Color.Primary"
+            Size="Size.Small"
+            Variant="Variant.Filled">@t[General.Save]</MudButton>
+
+            @if (Id.HasValue)
+            {
+                <MudButton StartIcon="@Icons.Material.Filled.Delete" Class="mt-5 ml-2" OnClick="Delete" Color="Color.Error" Size="Size.Small" Variant="Variant.Filled">@t[General.Delete]</MudButton>
+            }
+        </MudItem>
+    </MudGrid>
+</MudForm>
+
+@code {
+
+    [Parameter]
+    public Guid? Id { get; set; }
+    [Parameter]
+    public Func<Task> Callback { get; set; }
+
+    private string Code { get; set; }
+    private string Name { get; set; }
+    private decimal Price { get; set; }
+    private ProductType Type { get; set; }
+    private bool IsInStock { get; set; }
+    private DateTime? DatetIn { get; set; }
+    private DateTime? DateOut { get; set; }
+
+    private ProductDto product;
+
+    private bool validForm;
+
+    private IEnumerable<ProductType> allTypes = Enum.GetValues<ProductType>();
+
+    protected async override Task OnInitializedAsync()
+    {
+        if (Id.HasValue)
+        {
+            product = await httpClient.Get<ProductDto>($"{ApplicationEndpoints.Products}/{Id}");
+
+            Id = product.Id;
+            Code = product.Code;
+            Name = product.Name;
+            Price = product.Price;
+            Type = product.Type;
+            IsInStock = product.IsInStock;
+            DatetIn = product.DatetIn;
+            DateOut = product.DateOut;
+        }
+    }
+
+    private async Task Save()
+    {
+        bool confirmed = await confirmationService.OpenConfirmationDialog(t[General.ConfirmSave]);
+
+        if (!confirmed)
+        {
+            return;
+        }
+
+        bool successfull = false;
+
+        if (!Id.HasValue)
+        {
+            var postModel = new CreateProductDto(Name, Code, Price, Type, IsInStock, DatetIn.Value, DateOut.Value);
+
+            Id = await httpClient.Post<CreateProductDto, Guid>(ApplicationEndpoints.Products, postModel);
+
+            successfull = Id.HasValue;
+        }
+        else
+        {
+            var original = new EditProductDto(product);
+            var edited = new EditProductDto(Name, Code, Price, Type, IsInStock, DatetIn, DateOut);
+
+            var model = Generics.GetDifferences(original, edited);
+
+            successfull = await httpClient.Patch<EditProductDto>($"{ApplicationEndpoints.Products}/{Id}", model);
+        }
+
+        if (successfull)
+        {
+            Callback?.Invoke();
+        }
+    }
+
+    private async Task Delete()
+    {
+        bool confirmed = await confirmationService.OpenConfirmationDialog(t[General.ConfirmDelete]);
+
+        if (!confirmed)
+        {
+            return;
+        }
+
+        var successfull = await httpClient.Delete($"{ApplicationEndpoints.Products}/{Id}");
+
+        if (successfull)
+        {
+            Callback?.Invoke();
+        }
+    }
+}

@@ -1,0 +1,102 @@
+﻿@page "/application"
+
+@using GNT.Common.Client.Services
+@using GNT.Shared.Dtos.Products
+@using GNT.Shared.Dtos.UserManagement
+@using GNT.Web.Client.Constants
+
+@inject CurrentUser currentUser;
+@inject NavigationManager navigationNamanger;
+@inject BlazorHttpClient httpClient;
+
+<MudGrid Class="d-flex justify-center align-items-center mud-height-full" Style="height: 80vh;">
+    <MudItem xs="12">
+        @if (Product == null && !showInvalidProductCodePage)
+        {
+            <MudTextField T="string" @bind-Text="searchText" Variant="Variant.Outlined" Adornment="Adornment.End" Placeholder="Cautati produsul dupa cod..." AdornmentIcon="@Icons.Material.Filled.Search" OnAdornmentClick="SearchProduct"/>
+        }
+        else if (Product != null)
+        {
+            <MudCard>
+                <MudCardContent>
+                    <MudText Typo="Typo.h6">@Product.Name</MudText>
+                    <MudStack Row=true AlignItems="AlignItems.Center">
+                        <MudText Typo="Typo.body2">@Product.Code</MudText>
+                        <MudText Typo="Typo.body2" Color="@(Product.IsInStock ? Color.Success : Color.Error)">@(Product.IsInStock ? "In Stoc" : "Nu este in stoc")</MudText>
+                    </MudStack>
+                    <MudText Typo="Typo.subtitle2" Color="Color.Primary">Pret: @Product.Price RON</MudText>
+                    <MudText Typo="Typo.caption">Cod produs: @Product.Code</MudText>
+                </MudCardContent>
+                <MudCardActions>
+                    <MudButton Color="@(Product.IsInStock ? Color.Error : Color.Success)" OnClick="ToggleStock" Variant="Variant.Filled" Class="mr-5">
+                        @(Product.IsInStock ? "Scoate din stoc" : "Adaugă în stoc")
+                    </MudButton>
+
+                    <MudButton Color="Color.Primary" Variant="Variant.Outlined" OnClick="ResetParameters">
+                        Inapoi
+                    </MudButton>
+                </MudCardActions>
+            </MudCard>
+        }
+        else if (showInvalidProductCodePage)
+        {
+            <MudAlert Severity="Severity.Error" Variant="Variant.Filled" Elevation="4">
+                Codul introdus este incorect sau nu apartine niciunui produs existent.
+            </MudAlert>
+            <MudButton Color="Color.Primary" Variant="Variant.Outlined" OnClick="ResetParameters">
+                Inapoi
+            </MudButton>
+        }
+    </MudItem>
+</MudGrid>
+
+@code {
+
+    private string searchText { get; set; }
+
+    private ProductDto Product { get; set; }
+
+    bool showInvalidProductCodePage = false;
+
+    protected override Task OnInitializedAsync()
+    {
+        if (!currentUser.IsAuthenticated)
+        {
+            navigationNamanger.NavigateTo("", true);
+        }
+
+        return Task.CompletedTask;
+    }
+
+    private async Task ToggleStock()
+    {
+        var editModel = new EditProductDto();
+
+        Product.IsInStock = !Product.IsInStock;
+
+        editModel.IsInStock = Product.IsInStock;
+
+        await httpClient.Patch($"{ApplicationEndpoints.Products}/{Product.Id}", editModel);
+
+        StateHasChanged();
+    }
+
+    private async Task SearchProduct()
+    {
+        Product = await httpClient.Get<ProductDto>($"{ApplicationEndpoints.Products}/{searchText}/code");
+
+        if(Product == null)
+        {
+            showInvalidProductCodePage = true;
+        }
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task ResetParameters()
+    {
+        Product = null; 
+        showInvalidProductCodePage = false; 
+        await InvokeAsync(StateHasChanged);
+    }
+}

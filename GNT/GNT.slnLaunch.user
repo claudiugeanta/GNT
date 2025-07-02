@@ -1,0 +1,47 @@
+[
+  {
+    "Name": "Client-Server Start",
+    "Projects": [
+      {
+        "Path": "Presentation\\GNT.Web.Client\\GNT.Web.Client.csproj",
+        "Action": "Start"
+      },
+      {
+        "Path": "Presentation\\GNT.Web.Server\\GNT.Web.Server.csproj",
+        "Action": "Start"
+      }
+    ]
+  },
+  {
+    "Name": "Mobile-Server Start",
+    "Projects": [
+      {
+        "Path": "Presentation\\GNT.Web.Server\\GNT.Web.Server.csproj",
+        "Action": "Start"
+      },
+      {
+        "Path": "Presentation\\GNT.Mobile\\GNT.Mobile.csproj",
+        "Action": "Start",
+        "DebugTarget": "Windows Machine"
+      }
+    ]
+  },
+  {
+    "Name": "All Start",
+    "Projects": [
+      {
+        "Path": "Presentation\\GNT.Web.Client\\GNT.Web.Client.csproj",
+        "Action": "Start"
+      },
+      {
+        "Path": "Presentation\\GNT.Web.Server\\GNT.Web.Server.csproj",
+        "Action": "Start"
+      },
+      {
+        "Path": "Presentation\\GNT.Mobile\\GNT.Mobile.csproj",
+        "Action": "Start",
+        "DebugTarget": "Windows Machine"
+      }
+    ]
+  }
+]
