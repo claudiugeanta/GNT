@@ -19,7 +19,6 @@ public class GntWebApplicationFactory : WebApplicationFactory<Program>
         {
             config.AddInMemoryCollection(new Dictionary<string, string?>
             {
-                ["Security:AesEncryptionKey"] = "TestAesKey123456TestAesKey123456",
                 ["TokenProvider:Issuer"] = "testserver",
                 ["TokenProvider:Audience"] = "testclient",
                 ["TokenProvider:ExpirationSeconds"] = "9000",
@@ -56,8 +55,6 @@ public class GntWebApplicationFactory : WebApplicationFactory<Program>
 
             services.AddScoped<IAppDbContext>(sp =>
                 sp.GetRequiredService<AppDbContext>());
-
-            AuthHelper.Initialize("F3777711E7B2C7A821BDB3B21C9A7945");
         });
     }
 }

@@ -27,11 +27,6 @@ namespace GNT.Web.Server.Config
 
             var aesKey = Configuration["Security:AesEncryptionKey"];
 
-            if (!string.IsNullOrEmpty(aesKey))
-            {
-                AuthHelper.Initialize(aesKey);
-            }
-
             services.AddMemoryCache();
 
             services.AddOpenApi();

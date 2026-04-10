@@ -7,4 +7,6 @@ public sealed class TokenProviderOptions
     public int ExpirationSeconds { get; set; }
     public string CookieName { get; set; }
     public string ExpirationHeaderName { get; set; }
+    public string SecretKey { get; set; } = default!;
+
 }

@@ -8,7 +8,6 @@ namespace GNT.Application.Interfaces
         DbSet<BusinessProduct> BusinessProduct { get; set; }
 
         DbSet<User> User { get; set; }
-        DbSet<UserRole> UserRole { get; set; }
         DbSet<UserSecurityCode> UserSecurityCode { get; set; }
         
         DbSet<Role> Role { get; set; }

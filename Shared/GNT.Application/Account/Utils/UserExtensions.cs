@@ -2,108 +2,91 @@
 using GNT.Enums;
 using GNT.Common.Extensions;
 using GNT.Shared.Errors;
+using Microsoft.AspNetCore.Identity;
 
-namespace GNT.Application.Account.Utils
+namespace GNT.Application.Account.Utils;
+
+public static class UserValidationExtension
 {
-    public static class UserValidationExtension
+    public static void ValidatePassword(this User user, string inputPassword, IPasswordHasher<User> passwordHasher)
     {
-        public static void ValidatePassword(this User user, string inputPassword)
+        var result = passwordHasher.VerifyHashedPassword(user, user.PasswordHash!, inputPassword);
+        if (result == PasswordVerificationResult.Failed)
+            throw new BusinessException(FailureCode.InvalidCredentials);
+    }
+
+    public static void ValidateStatus(this User user)
+    {
+        if (user.IsBlocked && user.UnblockDate > DateTime.Now)
         {
-            if(!AccountService.IsValidPassword(inputPassword, user.Password))
+            if (user.UnblockDate > DateTime.Now.AddYears(10))
+                throw new BusinessException(FailureCode.UserPermanentlyBlocked);
+            else
+                throw new BusinessException(FailureCode.UserTemporaryBlocked);
+        }
+        else if (user.IsBlocked && user.UnblockDate < DateTime.Now)
+        {
+            user.IsBlocked = false;
+            user.UnblockDate = null;
+        }
+    }
+
+    public static UserSecurityCode GenerateUserSecurityCode(this User user, SecurityCodeTypes type)
+    {
+        var expiresAt = DateTime.Now;
+        var code = type switch
+        {
+            SecurityCodeTypes.ResetPassword => (
+                expires: expiresAt.AddMinutes(30),
+                code: StringExtensions.GenerateRandomString(100)),
+            SecurityCodeTypes.TwoFactorAuthentication => (
+                expires: expiresAt.AddMinutes(5),
+                code: StringExtensions.GenerateRandomString(6, onlyDigits: true)),
+            _ => throw new ArgumentOutOfRangeException(nameof(type))
+        };
+
+        var securityCode = new UserSecurityCode
+        {
+            Code = code.code,
+            CreatedAt = DateTime.Now,
+            ExpiresAt = code.expires,
+            FailedAttempts = 0,
+            Type = type,
+            UserId = user.Id
+        };
+
+        user.UserSecurityCodes.Add(securityCode);
+        return securityCode;
+    }
+
+    public static FailureCode? ValidateUserSecurityCode(this User user, string requestSecurityCode)
+    {
+        var securityCode = user.UserSecurityCodes.SingleOrDefault();
+
+        if (securityCode != null && securityCode.Code == requestSecurityCode
+            && !securityCode.SuccessfullyUsed && securityCode.ExpiresAt > DateTime.Now)
+            return null;
+
+        if (securityCode == null)
+            return FailureCode.InternalError;
+
+        if (securityCode.ExpiresAt < DateTime.Now && securityCode.Code == requestSecurityCode)
+            return FailureCode.SecurityCodeExpired;
+
+        if (securityCode.SuccessfullyUsed && securityCode.Code == requestSecurityCode)
+            return FailureCode.SecurityCodeAlreadyUsed;
+
+        if (securityCode.Code != requestSecurityCode && securityCode.ExpiresAt > DateTime.Now)
+        {
+            securityCode.FailedAttempts++;
+            if (securityCode.FailedAttempts >= 5)
             {
-                throw new BusinessException(FailureCode.InvalidCredentials);
+                user.IsBlocked = true;
+                user.UnblockDate = DateTime.Now.AddHours(1);
             }
+            return FailureCode.InvalidSecurityCode;
         }
 
-        public static void ValidateStatus(this User user) 
-        {
-            if (user.IsBlocked && user.UnblockDate > DateTime.Now)
-            {
-                if (user.UnblockDate > DateTime.Now.AddYears(10))
-                {
-                    throw new BusinessException(FailureCode.UserPermanentlyBlocked);
-                }
-                else
-                {
-                    throw new BusinessException(FailureCode.UserTemporaryBlocked);
-                }
-            }
-            else if(user.IsBlocked && user.UnblockDate < DateTime.Now)
-            {
-                user.IsBlocked = false;
-                user.UnblockDate = null;
-            }
-        }
-
-        public static UserSecurityCode GenerateUserSecurityCode(this User user, SecurityCodeTypes Type)
-        {
-            DateTime expiresAt = DateTime.Now;
-            string code = "";
-
-            switch(Type)
-            {
-                case SecurityCodeTypes.ResetPassword:
-                    expiresAt = expiresAt.AddMinutes(30);
-                    code = StringExtensions.GenerateRandomString(100);
-                    break;
-                case SecurityCodeTypes.TwoFactorAuthentication:
-                    expiresAt = expiresAt.AddMinutes(5);
-                    code = StringExtensions.GenerateRandomString(6, onlyDigits: true);
-                    break;
-            }
-
-            var securityCode = new UserSecurityCode()
-            {
-                Code = code,
-                CreatedAt = DateTime.Now,
-                ExpiresAt = expiresAt,
-                FailedAttempts = 0,
-                Type = Type,
-                UserId = user.Id
-            };
-
-            user.UserSecurityCodes.Add(securityCode);
-
-            return securityCode;
-        }
-
-        public static FailureCode? ValidateUserSecurityCode(this User user, string requestSecurityCode)
-        {
-            FailureCode? validationResult = null;
-
-            var securityCode = user.UserSecurityCodes.SingleOrDefault();
-
-            if (securityCode != null && securityCode.Code == requestSecurityCode && !securityCode.SuccessfullyUsed && securityCode.ExpiresAt > DateTime.Now)
-            {
-                return validationResult;
-            }
-            else if (securityCode == null)
-            {
-                validationResult = FailureCode.InternalError;
-            }
-            else if (securityCode.ExpiresAt < DateTime.Now && securityCode.Code == requestSecurityCode)
-            {
-                validationResult = FailureCode.SecurityCodeExpired;
-            }
-            else if (securityCode.SuccessfullyUsed && securityCode.Code == requestSecurityCode)
-            {
-                validationResult = FailureCode.SecurityCodeAlreadyUsed;
-            }
-            else if (securityCode.Code != requestSecurityCode && securityCode.ExpiresAt > DateTime.Now)
-            {
-                securityCode.FailedAttempts++;
-
-                if (securityCode.FailedAttempts >= 5)
-                {
-                    user.IsBlocked = true;
-                    user.UnblockDate = DateTime.Now.AddHours(1);
-                }
-
-                validationResult = FailureCode.InvalidSecurityCode;
-            }
-
-            return validationResult;
-        }
-
+        return FailureCode.InternalError;
     }
 }

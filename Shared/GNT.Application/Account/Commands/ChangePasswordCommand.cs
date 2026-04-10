@@ -1,7 +1,9 @@
 using GNT.Application.Account.Utils;
 using GNT.Application.Interfaces;
 using GNT.Common.Extensions;
+using GNT.Domain.Models;
 using GNT.Shared.Errors;
+using Microsoft.AspNetCore.Identity;
 
 namespace GNT.Application.Account.Commands;
 
@@ -17,18 +19,25 @@ public class ChangePasswordCommand : IRequest<Unit>
     public string NewPassword { get; set; }
 }
 
-public class ChangePasswordCommandHandler(IAppDbContext appDbContext, ICurrentSession session) : IRequestHandler<ChangePasswordCommand, Unit>
+public class ChangePasswordCommandHandler(
+    IAppDbContext appDbContext,
+    ICurrentSession session,
+    UserManager<User> userManager)
+    : IRequestHandler<ChangePasswordCommand, Unit>
 {
     public async Task<Unit> Handle(ChangePasswordCommand request, CancellationToken cancellationToken)
     {
-        var user = appDbContext.User.First(d => d.Id == session.CurrentUser.Id);
+        var user = appDbContext.User
+            .FirstOrDefault(d => d.Id == session.CurrentUser.Id)
+            ?? throw new BusinessException(FailureCode.NotFound);
 
-        user.ValidatePassword(request.CurrentPassword);
+        var result = await userManager.ChangePasswordAsync(
+            user, request.CurrentPassword, request.NewPassword);
 
-        user.Password = AccountService.HashPassword(request.NewPassword);
-        
+        if (!result.Succeeded)
+            throw new BusinessException(FailureCode.InvalidCredentials);
+
         await appDbContext.SaveChangesAsync(cancellationToken);
-
         return Unit.Value;
     }
 }

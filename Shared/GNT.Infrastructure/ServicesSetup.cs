@@ -1,4 +1,5 @@
 ﻿using GNT.Application.Interfaces;
+using GNT.Domain.Models;
 using GNT.Infrastructure.Context;
 using GNT.Infrastructure.Email;
 using Microsoft.AspNetCore.Http;
@@ -12,6 +13,10 @@ namespace GNT.Infrastructure
     {
         public static IServiceCollection AddInfrastructureServices(this IServiceCollection services, ConfigurationManager Configuration)
         {
+            services.AddIdentityCore<User>()
+                    .AddRoles<Role>()
+                    .AddEntityFrameworkStores<AppDbContext>();
+
             services.AddDbContext<IAppDbContext, AppDbContext>(o => o.UseSqlServer(Configuration.GetConnectionString("Default"),
                                                                b => b.MigrationsAssembly(typeof(AppDbContext).Assembly.FullName)));
 

@@ -36,7 +36,6 @@ namespace GNT.Web.Server.Controllers
         [HttpGet("log-out")]
         public IActionResult LogOut()
         {
-            AuthHelper.RemoveUserKey();
             Response.Cookies.Delete(tokenOptions.CookieName);
 
             return Ok();

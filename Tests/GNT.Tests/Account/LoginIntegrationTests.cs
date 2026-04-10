@@ -1,10 +1,11 @@
 ﻿using FluentAssertions;
 using GNT.Application.Account.Utils;
+using GNT.Domain.Models;
 using GNT.Infrastructure.Context;
 using GNT.Shared.Dtos.UserManagement;
 using GNT.Tests.Infrastructure;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.DependencyInjection;
-using Org.BouncyCastle.Crypto.Generators;
 using System.Net;
 using System.Net.Http.Json;
 
@@ -24,7 +25,6 @@ public class LoginIntegrationTests : IClassFixture<GntWebApplicationFactory>
     [Fact]
     public async Task Login_WithInvalidCredentials_Returns400()
     {
-        // Arrange
         var loginDto = new LoginDto
         {
             Email = "nonexistent@test.com",
@@ -32,35 +32,36 @@ public class LoginIntegrationTests : IClassFixture<GntWebApplicationFactory>
             SecurityCode = "123456"
         };
 
-        // Act
         var response = await _client.PostAsJsonAsync("/api/authentication/log-in", loginDto);
 
-        // Assert
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
 
     [Fact]
     public async Task Login_WithValidCredentials_ReturnsToken()
     {
-        // Arrange
         using var scope = _factory.Services.CreateScope();
+        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<User>>();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
         var securityCode = "123456";
+        var password = "Test123!@#";
 
-        var user = new GNT.Domain.Models.User
+        var user = new User
         {
             Id = Guid.NewGuid(),
+            UserName = "test2@test.com",
             Email = "test2@test.com",
             FirstName = "Test",
             LastName = "User",
-            Password = AccountService.HashPassword("Test123!@#"),
-            CreatedAt = DateTime.UtcNow,
-            LastUpdatedAt = DateTime.UtcNow,
+            EmailConfirmed = true,
             IsBlocked = false
         };
 
-        user.UserSecurityCodes.Add(new GNT.Domain.Models.UserSecurityCode
+        await userManager.CreateAsync(user, password);
+
+        // Adauga security code direct in DB
+        db.UserSecurityCode.Add(new UserSecurityCode
         {
             Id = Guid.NewGuid(),
             UserId = user.Id,
@@ -72,20 +73,17 @@ public class LoginIntegrationTests : IClassFixture<GntWebApplicationFactory>
             FailedAttempts = 0
         });
 
-        db.User.Add(user);
         await db.SaveChangesAsync();
 
         var loginDto = new LoginDto
         {
             Email = "test2@test.com",
-            Password = "Test123!@#",
+            Password = password,
             SecurityCode = securityCode
         };
 
-        // Act
         var response = await _client.PostAsJsonAsync("/api/authentication/log-in", loginDto);
 
-        // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var token = await response.Content.ReadFromJsonAsync<TokenDto>();
         token.Should().NotBeNull();
