@@ -7,6 +7,15 @@
 ##
 ## Get latest from https://github.com/github/gitignore/blob/main/Dotnet.gitignore
 
+user-keys.json
+appsettings.Development.json
+.vs/
+*.user
+bin/
+obj/
+logs/
+
+
 # Build results
 [Dd]ebug/
 [Dd]ebugPublic/
