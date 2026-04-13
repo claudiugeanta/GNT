@@ -106,7 +106,7 @@ public static class DependencyInjection
                 OnMessageReceived = context =>
                 {
                     context.Token = context.Request.Cookies[tokenOptions.CookieName] ??
-                        (string?)context.Request.HttpContext.Items[tokenOptions.CookieName];
+                        (string)context.Request.HttpContext.Items[tokenOptions.CookieName];
 
                     if (string.IsNullOrEmpty(context.Token))
                     {

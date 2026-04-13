@@ -96,16 +96,19 @@
 
         var roles = await httpClient.Get<IEnumerable<RoleDto>>(ApplicationEndpoints.Roles);
 
-        foreach (var role in roles)
-        {
-            var permissions = await httpClient.Get<List<Permission>>($"{ApplicationEndpoints.Roles}/{role.Id}/permissions");
+        var permissionTasks = roles.Select(role =>
+            httpClient.Get<List<Permission>>($"{ApplicationEndpoints.Roles}/{role.Id}/permissions")
+                .ContinueWith(t => (role, permissions: t.Result)));
 
+        var results = await Task.WhenAll(permissionTasks);
+
+        foreach (var (role, permissions) in results)
+        {
             rolePermissionsMatrixInitialModel.Add(role.Id, permissions);
             rolePermissionsMatrixViewModel.Add(role, allPermissions.ToDictionary(d => d, v => permissions.Contains(v)));
         }
 
         processing = false;
-
         StateHasChanged();
     }
 

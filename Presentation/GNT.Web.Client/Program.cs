@@ -34,7 +34,9 @@ builder.Services.AddAuthorizationCore(options =>
     }
 });
 
-builder.Services.AddCommonClientServices(builder.HostEnvironment.BaseAddress);
+var serverBaseAddress = builder.Configuration["ServerBaseAddress"];
+
+builder.Services.AddCommonClientServices(serverBaseAddress);
 
 var host = builder.Build();
 

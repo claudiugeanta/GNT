@@ -1,25 +1,26 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.Razor">
 
-  <PropertyGroup>
-	  <TargetFramework>net10.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
-  </PropertyGroup>
+	<PropertyGroup>
+		<TargetFramework>net10.0</TargetFramework>
+		<ImplicitUsings>enable</ImplicitUsings>
+	</PropertyGroup>
 
 
-  <ItemGroup>
-    <SupportedPlatform Include="browser" />
-  </ItemGroup>
+	<ItemGroup>
+		<SupportedPlatform Include="browser" />
+	</ItemGroup>
 
-  <ItemGroup>
-    <PackageReference Include="Blazored.LocalStorage" Version="4.5.0" />
-    <PackageReference Include="Microsoft.AspNetCore.Components.Authorization" Version="10.0.5" />
-    <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="10.0.5" />
-    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="10.0.5" />
-    <PackageReference Include="MudBlazor" Version="9.3.0" />
-  </ItemGroup>
+	<ItemGroup>
+		<PackageReference Include="Blazored.LocalStorage" Version="4.5.0" />
+		<PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.4.0" />
+		<PackageReference Include="Microsoft.AspNetCore.Components.Authorization" Version="10.0.5" />
+		<PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="10.0.5" />
+		<PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="10.0.5" />
+		<PackageReference Include="MudBlazor" Version="9.3.0" />
+	</ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\GNT.Dtos\GNT.Shared.csproj" />
-  </ItemGroup>
+	<ItemGroup>
+		<ProjectReference Include="..\GNT.Dtos\GNT.Shared.csproj" />
+	</ItemGroup>
 
 </Project>

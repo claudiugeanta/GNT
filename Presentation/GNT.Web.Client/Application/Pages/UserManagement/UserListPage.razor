@@ -57,7 +57,7 @@
 
     private void OpenDialog(Guid? id = null)
     {
-        var message = id.HasValue ? t[General.Add] : t[General.Edit];
+        var message = id.HasValue ? t[General.Edit] : t[General.Add];
 
         dialogsService.OpenCudDialog<UserDetails>(message, id, dataGrid.ReloadServerData);
     }
